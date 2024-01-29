@@ -1,0 +1,6 @@
+models/Real-ESRGAN/experiments/*
+models/Real-ESRGAN/weights/*
+models/Real-ESRGAN/gfpgan/*
+models/Real-ESRGAN/datasets/*
+data/*
+
