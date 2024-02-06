@@ -22,4 +22,6 @@ Unet (needs to be implemented, current models are 4+ years old, e.g., https://gi
 
 
 ## Partners
-The partner institutions from the HIRA project are the following
+The partner institutions from the HIRA project are the following:
+* Next2U (ITA)
+* SUPSI IDSIA (CHE)
