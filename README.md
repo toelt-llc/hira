@@ -25,3 +25,14 @@ Unet (needs to be implemented, current models are 4+ years old, e.g., https://gi
 The partner institutions from the HIRA project are the following:
 * Next2U (ITA)
 * SUPSI IDSIA (CHE)
+
+
+
+## bugs
+if `pytorch>2.1.1`, it is possible that `basicsr` stops running because this library hasn't been updated since 2022. For that it is necessary to modify `basicsr/data/degradation.py` line 8
+
+```from torchvision.transforms.functional_tensor import rgb_to_grayscale```
+
+to
+
+```from torchvision.transforms.functional import rgb_to_grayscale```
