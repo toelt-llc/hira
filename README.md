@@ -19,7 +19,9 @@ https://github.com/xinntao/Real-ESRGAN
 Unet (needs to be implemented, current models are 4+ years old, e.g., https://github.com/cerniello/Super_Resolution_DNN?tab=readme-ov-file)
 
 
-
+#### losses to try
+* Selective SSIM
+* Charbonnier loss
 
 ## Partners
 The partner institutions from the HIRA project are the following:
