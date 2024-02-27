@@ -16,8 +16,8 @@ The HIRA project is involved with performing super-resolution on infrared images
 https://github.com/xinntao/Real-ESRGAN
 
 #### model to try
-Unet (needs to be implemented, current models are 4+ years old, e.g., https://github.com/cerniello/Super_Resolution_DNN?tab=readme-ov-file)
-
+* Unet (needs to be implemented, current models are 4+ years old, e.g., https://github.com/cerniello/Super_Resolution_DNN?tab=readme-ov-file)
+* https://github.com/IceClear/StableSR
 
 #### losses to try
 * Selective SSIM
