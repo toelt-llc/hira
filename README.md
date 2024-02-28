@@ -18,7 +18,8 @@ https://github.com/xinntao/Real-ESRGAN
 #### model to try
 * Unet (needs to be implemented, current models are 4+ years old, e.g., https://github.com/cerniello/Super_Resolution_DNN?tab=readme-ov-file)
 * https://github.com/IceClear/StableSR
-
+* channel attention (https://www.sciencedirect.com/science/article/pii/S0031320320306014)
+  
 #### losses to try
 * Selective SSIM
 * Charbonnier loss
