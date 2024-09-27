@@ -13,34 +13,21 @@ The HIRA project is involved with performing super-resolution on infrared images
 
 ### Models
 #### Current best model
-https://github.com/xinntao/Real-ESRGAN
+[RealESRGAN](https://github.com/xinntao/Real-ESRGAN)
 
-#### models evaluated
-* Unet (needs to be implemented, current models are 4+ years old, e.g., https://github.com/cerniello/Super_Resolution_DNN?tab=readme-ov-file)
-* https://github.com/IceClear/StableSR
-* channel attention (https://www.sciencedirect.com/science/article/pii/S0031320320306014)
-* keras base model
-* pytorch base model
-* hugginface models:
+#### Models evaluated
+* [RealESRGAN](https://github.com/xinntao/Real-ESRGAN)
+* [Stable SR](https://github.com/IceClear/StableSR)
+* [keras base model](hira/models/keras)
+* [hugginface models](hira/models/hf_models):
     - Latent Diffusion
     - GigaGan (1 implementation)
-  
-#### losses or models to try
-* pytorch base
-* Selective SSIM
-* Charbonnier loss
 
+### Implementation
+For a reference pipeline and setup of the workflow, refer to the [notebook](./notebook.ipynb)
+
+___
 ## Partners
 The partner institutions from the HIRA project are the following:
 * Next2U (ITA)
 * SUPSI IDSIA (CHE)
-
-
-## bugs list
-if `pytorch>2.1.1`, it is possible that `basicsr` stops running because this library hasn't been updated since 2022. For that it is necessary to modify `basicsr/data/degradation.py` line 8
-
-```from torchvision.transforms.functional_tensor import rgb_to_grayscale```
-
-to
-
-```from torchvision.transforms.functional import rgb_to_grayscale```
