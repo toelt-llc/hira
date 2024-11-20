@@ -16,6 +16,9 @@ The HIRA project is involved with performing super-resolution on infrared images
 [RealESRGAN](https://github.com/xinntao/Real-ESRGAN)
 
 #### Models evaluated
+* TODO LIST of models implementations:
+    - Residual Dense Network (RDN)
+    - Enhanced Deep SR (EDSR)
 * [RealESRGAN](https://github.com/xinntao/Real-ESRGAN)
 * [Stable SR](https://github.com/IceClear/StableSR)
 * [keras base model](hira/models/keras)
