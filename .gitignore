@@ -4,3 +4,12 @@ models/Real-ESRGAN/gfpgan/*
 models/Real-ESRGAN/datasets/*
 data/*
 
+models/Real-ESRGAN/inputs
+models/Real-ESRGAN/outputs
+
+code/__pycache__
+code/.eggs
+gfpgan/*
+code/*/
+code/**/__pycache__
+!code/realesrgan
