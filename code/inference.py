@@ -1,6 +1,7 @@
 import argparse
 import ffmpeg
 import glob, gpu
+from loguru import logger
 import mimetypes
 import numpy as np
 import os
@@ -14,6 +15,7 @@ from realesrgan import RealESRGANer
 from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
 def get_video_meta_info(video_path):
+    # logger.info(f"Extracting metadata from {video_path}")
     ret = {}
     probe = ffmpeg.probe(video_path)
     video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']
@@ -44,7 +46,7 @@ class Reader:
             self.audio = meta['audio']
             self.nb_frames = meta['nb_frames']
         else:
-            print("Error - Not a video file")
+            logger.error("Error - Not a video file")
 
     def get_resolution(self):
         return self.height, self.width
@@ -82,7 +84,7 @@ class Writer:
     def __init__(self, args, audio, height, width, video_save_path, fps):
         out_width, out_height = int(width * args.outscale), int(height * args.outscale)
         if out_height > 2160:
-            print('You are generating video that is larger than 4K, which will be very slow due to IO speed.',
+            logger.warning('You are generating video that is larger than 4K, which will be very slow due to IO speed.',
                   'We highly recommend to decrease the outscale(aka, -s).')
 
         if audio is not None:
@@ -123,10 +125,6 @@ def inference_video(args, file, video_save_path, device=None):
         model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
         netscale = 4
         file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/RealESRNet_x4plus.pth']
-    elif args.model_name == 'RealESRGAN_x4plus_anime_6B':  # x4 RRDBNet model with 6 blocks
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
-        netscale = 4
-        file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth']
     elif args.model_name == 'RealESRGAN_x2plus':  # x2 RRDBNet model
         model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
         netscale = 2
@@ -178,8 +176,7 @@ def inference_video(args, file, video_save_path, device=None):
     fps = reader.get_fps()
     in_fps, in_len = reader.__fps__(), reader.get_len()
     writer = Writer(args, audio, height, width, video_save_path, fps)
-    # print(height, width, video_save_path, fps, in_len)
-    print(f'Input video: {height}x{width}, fps: {in_fps}, frames: {in_len}, length: {in_len / in_fps:.2f}s')
+    logger.info(f'Input video: {height}x{width}, fps: {in_fps}, frames: {in_len}, length: {in_len / in_fps:.2f}s')
 
     pbar = tqdm(total=in_len, unit='frame', desc='inference')
     while True:
@@ -190,8 +187,8 @@ def inference_video(args, file, video_save_path, device=None):
         try:
             output, _ = upsampler.enhance(img, outscale=args.outscale)
         except RuntimeError as error:
-            print('Error', error)
-            print('If you encounter CUDA out of memory, try to set --tile with a smaller number.')
+            logger.error('Error', error)
+            logger.error('If you encounter CUDA out of memory, try to set --tile with a smaller number.')
         else:
             writer.write_frame(output)
 
@@ -202,7 +199,7 @@ def inference_video(args, file, video_save_path, device=None):
     writer.close()
 
 def run(args, file):
-    print(f"Processing video file {file}: ")
+    logger.info(f"Processing video file {file}: ")
 
     args.video_name = osp.splitext(os.path.basename(file))[0]
     video_save_path = osp.join(args.output, f'{args.video_name}_{args.suffix}.mp4')
@@ -215,8 +212,8 @@ def run(args, file):
     width_out = video_streams[0]['width']
     fps_out = eval(video_streams[0]['avg_frame_rate'])
     frames_out = int(video_streams[0]['nb_frames'])
-    print(f'Output video: {height_out}x{width_out}, fps: {fps_out}, frames: {frames_out}, length: {frames_out / fps_out:.2f}s')
-    print(f"Saved to: ", video_save_path)
+    logger.info(f'Output video: {height_out}x{width_out}, fps: {fps_out}, frames: {frames_out}, length: {frames_out / fps_out:.2f}s')
+    logger.info(f"Upscaled video saved to {video_save_path} \n")
 
     return
 
@@ -263,13 +260,13 @@ def main():
         run(args, args.input)
 
     elif os.path.isdir(args.input):
-        print(f"Processing all videos from {args.input}/ folder :")
-        print([i for i in glob.glob(os.path.join(args.input, '*')) if i.lower().endswith(('.mp4', '.flv', '.mkv'))], "\n")
+        logger.info(f"Processing all videos from {args.input} folder :")
+        print([os.path.basename(i) for i in glob.glob(os.path.join(args.input, '*')) if i.lower().endswith(('.mp4', '.flv', '.mkv'))], "\n")
         for file in glob.glob(os.path.join(args.input, '*')):
             if file.lower().endswith(('.mp4', '.flv', '.mkv')):  
                 run(args, file)
             else:
-                print(f"skipping non-video file: {file} \n")
+                logger.warning(f"skipping non-video file: {file} \n")
 
 if __name__ == '__main__':
     main()
