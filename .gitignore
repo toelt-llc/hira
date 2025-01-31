@@ -10,6 +10,6 @@ models/Real-ESRGAN/outputs
 code/__pycache__
 code/.eggs
 gfpgan/*
-code/*/
+code/*/*
 code/**/__pycache__
 !code/realesrgan

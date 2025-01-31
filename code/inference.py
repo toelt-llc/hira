@@ -1,6 +1,6 @@
 import argparse
 import ffmpeg
-import glob, gpu
+import glob#, gpu
 from loguru import logger
 import mimetypes
 import numpy as np
@@ -114,7 +114,7 @@ class Writer:
         self.stream_writer.stdin.close()
         self.stream_writer.wait()
 
-def inference_video(args, file, video_save_path, device=None):
+def inference_video(args, file, video_save_path):
     # ---------------------- determine models according to model names ---------------------- #
     args.model_name = args.model_name.split('.pth')[0]
     if args.model_name == 'RealESRGAN_x4plus':  # x4 RRDBNet model
@@ -166,8 +166,7 @@ def inference_video(args, file, video_save_path, device=None):
         tile=args.tile,
         tile_pad=args.tile_pad,
         pre_pad=args.pre_pad,
-        half=not args.fp16,
-        device=device,
+        half=args.fp16 # default to False
     )
 
     reader = Reader(args, file)
@@ -192,7 +191,7 @@ def inference_video(args, file, video_save_path, device=None):
         else:
             writer.write_frame(output)
 
-        torch.cuda.synchronize(device)
+        # torch.cuda.synchronize(device)
         pbar.update(1)
 
     reader.close()
@@ -217,7 +216,7 @@ def run(args, file):
 
     return
 
-@gpu.gpu_cpu_util
+# @gpu.gpu_cpu_util
 def main():
     """ Inference demo.
         Script simplified and customized from Real-ESRGAN.
@@ -235,10 +234,9 @@ def main():
     parser.add_argument('-t', '--tile', type=int, default=0, help='Tile size, 0 for no tile during testing (default)')
     parser.add_argument('--tile_pad', type=int, default=10, help='Tile padding. Default 10.')
     parser.add_argument('--pre_pad', type=int, default=0, help='Pre padding size at each border')
-    parser.add_argument('--fp16', action='store_true', help='Use fp16 precision. Default: fp32 (max precision).')
+    parser.add_argument('--fp16', action='store_true', help='Use fp16 precision. Default: fp32 (max precision).') #Stores False default
     parser.add_argument('--fps', type=float, default=None, help='FPS of the output video')
     parser.add_argument('--ffmpeg_bin', type=str, default='ffmpeg', help='The path to ffmpeg')
-    parser.add_argument('--num_process_per_gpu', type=int, default=1)
 
     args = parser.parse_args()
 
@@ -263,8 +261,17 @@ def main():
         logger.info(f"Processing all videos from {args.input} folder :")
         print([os.path.basename(i) for i in glob.glob(os.path.join(args.input, '*')) if i.lower().endswith(('.mp4', '.flv', '.mkv'))], "\n")
         for file in glob.glob(os.path.join(args.input, '*')):
-            if file.lower().endswith(('.mp4', '.flv', '.mkv')):  
+            if file.lower().endswith(('.mp4')):
                 run(args, file)
+            elif file.lower().endswith(('.flv', '.mkv')):
+                logger.info(f"Converting video file {os.path.basename(file)} to mp4")
+                mp4_path = file.replace('.flv', '.mp4') if file.lower().endswith('.flv') else file.replace('.mkv', '.mp4')
+                result = os.system(f'ffmpeg -i {file} -c:v libx264 -c:a aac {mp4_path}')
+                if result == 0:
+                    run(args, mp4_path)
+                else:
+                    logger.error(f"Failed to convert file: {file}")
+                    continue
             else:
                 logger.warning(f"skipping non-video file: {file} \n")
 

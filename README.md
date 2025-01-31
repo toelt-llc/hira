@@ -27,7 +27,21 @@ The HIRA project is involved with performing super-resolution on infrared images
     - GigaGan (1 implementation)
 
 ### Implementation
-For a reference pipeline and setup of the workflow, refer to the [notebook](./notebook.ipynb)
+**Set Up**
+`conda create -n hira python=3.11`  
+`conda activate hira`  
+**Usage**
+`cd code`  
+`python3 inference.py`  
+Default command looks for files in the *code/inputs/* folder. Put your samples in this folder.  
+The upscaled results outputs are in *code/results*  
+Default upscales x2.  
+
+Command options: 
+`python3 inference.py -h`
+
+
+For a reference pipeline of the training and setup of the workflow, refer to the [notebook](./notebook.ipynb)
 
 ___
 ## Partners
