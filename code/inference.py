@@ -253,6 +253,7 @@ def main():
     # single file
     if mimetypes.guess_type(args.input)[0] is not None and mimetypes.guess_type(args.input)[0].startswith('video'):
         # python case test, process flv and mkv 
+        mp4_path = None
         match args.input.lower():
             case str(path) if path.endswith('.flv'):
                 mp4_path = path.replace('.flv', '.mp4')
@@ -262,8 +263,8 @@ def main():
         if mp4_path:
             os.system(f'ffmpeg -i {args.input} -codec copy {mp4_path}')
             args.input = mp4_path
-
-        run(args, args.input)
+            run(args, args.input)
+        else: run(args, args.input)
 
     # folder
     elif os.path.isdir(args.input):
