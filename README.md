@@ -2,20 +2,15 @@
 
 ## Overview
 
-This repository contains a script to perform video inference using several models. The script supports various video formats and can handle large videos by splitting them into manageable parts. It upscales videos and save the results.
+This repository contains a script to perform video upscaling using existing and custom models. The script supports .mp4/.flv/.mkv video formats. 
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Arguments](#arguments)
+- [Arguments](#main-script-arguments)
 - [Examples](#examples)
 - [Models Evaluated](#models-evaluated)
-- [Data](#data)
-- [Implementation](#implementation)
-- [Partners](#partners)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Installation
 
@@ -56,6 +51,7 @@ This repository contains a script to perform video inference using several model
 
 By default, the command looks for files in the *code/inputs/* folder. Put your samples in this folder.
 The upscaled results outputs are in *code/results*. Default upscales x2.
+Supported formats are : .mp4/.flv/.mkv. Currently, videos are converted to mp4 at inference.
 
 Command options:
 
@@ -77,17 +73,18 @@ To process all videos in a directory:
 python3 inference.py -i path/to/input/directory -o path/to/output/directory
 ```
 
-For a reference pipeline of the model training and setup of the workflow, refer to the [notebook](./notebook.ipynb)
+**Upcoming features** :  
+- [ ] inference handles both images and videos
+- [ ] reference pipeline of the model fine-tugning training
+<!-- refer to the [notebook](./notebook.ipynb) -->
+- [ ] long video split : if a video > 2 minutes, the script will automatically split it into parts of 2 minutes each, the model will upscale and save them individually.
 
-### Splitting Long Videos
-
-If a video is longer than 2 minutes, the script will automatically split it into parts of 2 minutes each and process them individually. The processed parts will be saved in subfolders named after the input video.
-
-## Arguments
+## Main Script Arguments
+The [inference.py](/code/inference.py) script takes the following input arguments : 
 
 - `-i`: Path to the input video or directory containing videos.
 - `-o`: Output directory location to save the processed videos.
-- `-s`: The final upsampling scale of the image (default: 2).
+- `-s`: The final upsampling scale of the image (default: 2, target upscale of the project).
 - `--fps`: FPS of the output video. Default to input FPS.
 - `-n`: Model name to use for inference. Options include `realesr-general-x4v3` (default) and a custom trained model (TBS)
 - `-dn`: Denoise strength for the default model, varying results based on the input. (0 for weak denoise, 1 for strong denoise).
@@ -114,11 +111,11 @@ python inference.py -i inputs -o results -n realesr-animevideov3 -s 2
 
 ## Models Evaluated
 
-LIST of models implementations:  
-[x] [RealESRGAN](https://github.com/xinntao/Real-ESRGAN)  
-[x] [keras base model](hira/models/keras)  
-[~] [hugginface models](hira/models/hf_models):  
-[ ] [Stable SR](https://github.com/IceClear/StableSR)  
+LIST of tested models:  
+- [x] [RealESRGAN](https://github.com/xinntao/Real-ESRGAN)  
+- [x] [keras base model](hira/models/keras)  
+- [x] [hugginface open models](hira/models/hf_models):  
+- [ ] [Stable SR](https://github.com/IceClear/StableSR)  
 
 <!-- ## Partners
 
