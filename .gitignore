@@ -1,15 +1,9 @@
-models/Real-ESRGAN/experiments/*
-models/Real-ESRGAN/weights/*
-models/Real-ESRGAN/gfpgan/*
-models/Real-ESRGAN/datasets/*
 data/*
+**/*DS_Store
 
-models/Real-ESRGAN/inputs
-models/Real-ESRGAN/outputs
-
-code/__pycache__
-code/.eggs
-gfpgan/*
-code/*/*
 code/**/__pycache__
+code/*/*
+code/inference_*
 !code/realesrgan
+
+models/

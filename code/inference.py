@@ -1,13 +1,13 @@
 import argparse
 import ffmpeg
-import glob#, gpu
-from loguru import logger
+import glob
+#import gpu
 import mimetypes
 import numpy as np
 import os
-import torch
-from basicsr.archs.rrdbnet_arch import RRDBNet
+
 from basicsr.utils.download_util import load_file_from_url
+from loguru import logger
 from os import path as osp
 from tqdm import tqdm
 
@@ -15,6 +15,8 @@ from realesrgan import RealESRGANer
 from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
 def get_video_meta_info(video_path):
+    """ Extracts metadata from a video file using ffmpeg 
+    """
     # logger.info(f"Extracting metadata from {video_path}")
     ret = {}
     probe = ffmpeg.probe(video_path)
@@ -25,7 +27,26 @@ def get_video_meta_info(video_path):
     ret['fps'] = eval(video_streams[0]['avg_frame_rate'])
     ret['audio'] = ffmpeg.input(video_path).audio if has_audio else None
     ret['nb_frames'] = int(video_streams[0]['nb_frames'])
+    ret['duration'] = float(video_streams[0]['duration'])
     return ret
+
+def split_video(video_path, output_folder):
+    """ Splits video > 2 minutes in subparts and saves them in the output folder. 
+        Currently unused.
+    """
+    duration = get_video_meta_info(video_path)['duration']
+    if duration is None:
+        logger.error(f"Failed to get duration for video: {video_path}")
+        return
+    parts = []
+    start_time = 0
+    while start_time < duration:
+        end_time = min(start_time + 120, duration)
+        part_path = os.path.join(output_folder, f"{os.path.splitext(os.path.basename(video_path))[0]}_part_{int(start_time // 60)}.mp4")
+        os.system(f'ffmpeg -i {video_path} -ss {start_time} -to {end_time} -c copy {part_path}')
+        parts.append(part_path)
+        start_time += 120
+    return parts
 
 class Reader:
 
@@ -117,29 +138,15 @@ class Writer:
 def inference_video(args, file, video_save_path):
     # ---------------------- determine models according to model names ---------------------- #
     args.model_name = args.model_name.split('.pth')[0]
-    if args.model_name == 'RealESRGAN_x4plus':  # x4 RRDBNet model
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-        netscale = 4
-        file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth']
-    elif args.model_name == 'RealESRNet_x4plus_latest':  # x4 RRDBNet model my own trained model
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-        netscale = 4
-        file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/RealESRNet_x4plus.pth']
-    elif args.model_name == 'RealESRGAN_x2plus':  # x2 RRDBNet model
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
-        netscale = 2
-        file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth']
-    elif args.model_name == 'realesr-animevideov3':  # x4 VGG-style model (XS size)
-        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu')
-        netscale = 4
-        file_url = ['https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth']
-    elif args.model_name == 'realesr-general-x4v3':  # x4 VGG-style model (S size)
+    if args.model_name == 'realesr-general-x4v3':  # x4 VGG-style model (S size)
         model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
         netscale = 4
         file_url = [
             'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-wdn-x4v3.pth',
             'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth'
         ]
+    else:
+        logger.error(f'Error: model name {args.model_name} is not supported.')
 
     # ---------------------- determine model paths ---------------------- #
     model_path = os.path.join('weights', args.model_name + '.pth')
@@ -150,7 +157,7 @@ def inference_video(args, file, video_save_path):
             model_path = load_file_from_url(
                 url=url, model_dir=os.path.join(ROOT_DIR, 'weights'), progress=True, file_name=None)
 
-    # use dni to control the denoise strength
+    # use dni to control the denoise strength, base model only
     dni_weight = None
     if args.model_name == 'realesr-general-x4v3' and args.denoise_strength != 1:
         wdn_model_path = model_path.replace('realesr-general-x4v3', 'realesr-general-wdn-x4v3')
@@ -243,6 +250,7 @@ def main():
     args.input = args.input.rstrip('/').rstrip('\\')
     os.makedirs(args.output, exist_ok=True)
 
+    # single file
     if mimetypes.guess_type(args.input)[0] is not None and mimetypes.guess_type(args.input)[0].startswith('video'):
         # python case test, process flv and mkv 
         match args.input.lower():
@@ -257,12 +265,14 @@ def main():
 
         run(args, args.input)
 
+    # folder
     elif os.path.isdir(args.input):
         logger.info(f"Processing all videos from {args.input} folder :")
         print([os.path.basename(i) for i in glob.glob(os.path.join(args.input, '*')) if i.lower().endswith(('.mp4', '.flv', '.mkv'))], "\n")
         for file in glob.glob(os.path.join(args.input, '*')):
             if file.lower().endswith(('.mp4')):
                 run(args, file)
+            # convert first
             elif file.lower().endswith(('.flv', '.mkv')):
                 logger.info(f"Converting video file {os.path.basename(file)} to mp4")
                 mp4_path = file.replace('.flv', '.mp4') if file.lower().endswith('.flv') else file.replace('.mkv', '.mp4')
