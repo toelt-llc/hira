@@ -1,0 +1,139 @@
+import os
+import argparse
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from basicsr.utils.download_util import load_file_from_url
+from loguru import logger
+from realesrgan import RealESRGANer
+from realesrgan.archs.srvgg_arch import SRVGGNetCompact
+from smartcam import smartcamDecoder
+from tqdm import tqdm
+
+def read_binary(input_path):
+    """ Read binary file and return the number of frames, total time and video rate.
+    """
+    decoder = smartcamDecoder.SmartCamDecoder()
+    num_frames, total_time, video_rate = decoder.on_file(input_path)
+
+    decoder.read_frame(0)
+    vImg, vt, tImg, tt = decoder.get_images()
+    height, width = tImg.shape
+    logger.info(f'Input resolution: {height}x{width}, fps: {video_rate}, frames: {num_frames}, length: {total_time}s')
+
+    frames_np = np.empty((num_frames, height, width), dtype=np.uint16)  # Preallocate
+    for i in tqdm(range(num_frames), unit='frame'):
+        # convert
+        decoder.read_frame(i)
+        vImg, vt, tImg, tt = decoder.get_images()
+        frame_np = np.array(tImg, dtype=np.float32)
+        frame_array_scaled_256 = ((tImg - frame_np.max()) / (frame_np.max() - frame_np.min()) * 255).astype(np.uint8)
+        frames_np[i] = frame_array_scaled_256  # Assign 
+
+    return frames_np, num_frames, total_time, video_rate
+
+def inference_realesrgan(args, frame_array):#, video_save_path):
+    # ---------------------- determine models according to model names ---------------------- #
+    args.model_name = args.model_name.split('.pth')[0]
+    if args.model_name == 'realesr-general-x4v3':  # x4 VGG-style model (S size)
+        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
+        netscale = 4
+        file_url = [
+            'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-wdn-x4v3.pth',
+            'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth'
+        ]
+    else:
+        logger.error(f'Error: model name {args.model_name} is not supported.')
+
+    # ---------------------- determine model paths, auto-download ---------------------- #
+    model_path = os.path.join('weights', args.model_name + '.pth')
+    if not os.path.isfile(model_path):
+        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        for url in file_url:
+            # model_path will be updated
+            model_path = load_file_from_url(
+                url=url, model_dir=os.path.join(ROOT_DIR, 'weights'), progress=True, file_name=None)
+
+    # use dni to control the denoise strength, base model only
+    dni_weight = None
+    if args.model_name == 'realesr-general-x4v3' and args.denoise_strength != 1:
+        wdn_model_path = model_path.replace('realesr-general-x4v3', 'realesr-general-wdn-x4v3')
+        model_path = [model_path, wdn_model_path]
+        dni_weight = [args.denoise_strength, 1 - args.denoise_strength]
+
+    # restorer, simplest form, no padding 
+    upsampler = RealESRGANer(
+        scale=netscale,
+        model_path=model_path,
+        dni_weight=dni_weight,
+        model=model,
+        half=args.fp16 # default to False
+    )
+
+    height, width = frame_array.shape if len(frame_array.shape) == 2 else frame_array[0].shape
+
+    pbar = tqdm(total=frame_array.shape[0], unit='frame', desc='inference')
+    i = 0
+    up_frames_np = np.empty((frame_array.shape[0], height*args.outscale, width*args.outscale), dtype=np.uint16) # Pre-allocate
+    while i < frame_array.shape[0]:
+        frame = frame_array[i]
+        if frame is None:
+            break
+
+        try:
+            # numpy rescale
+            # frame_np = np.array(frame, dtype=np.float32)
+            # frame_scaled_256 = ((frame - frame_np.max()) / (frame_np.max() - frame_np.min()) * 255).astype(np.uint8)
+            # print(frame_scaled_256.shape)
+            output, _ = upsampler.enhance(frame, outscale=args.outscale)
+            # return output
+        except RuntimeError as error:
+            logger.error('Error', error)
+        else:
+            # writer.write_frame(output)
+            up_frames_np[i] = output
+
+        i += 1
+        pbar.update(1)
+    return up_frames_np
+
+# @gpu.gpu_cpu_util
+def main():
+    """ Inference demo.
+        Script simplified and customized from Real-ESRGAN.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', type=str, default='inputs', help='Input video, image or folder')
+    parser.add_argument( '-n', '--model_name', type=str, default='realesr-general-x4v3',
+        help=('Model names: realesr-general-x4v3 (default)| realesr-animevideov3 '))
+    parser.add_argument('-o', '--output', type=str, default='results', help='Output folder')
+    parser.add_argument('-dn', '--denoise_strength', type=float, default=0.5,
+        help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
+              'Only used for the realesr-general-x4v3 model'))
+    parser.add_argument('-s', '--outscale', type=float, default=2, help='The final upsampling scale of the image. Default 2')
+    parser.add_argument('--fp16', action='store_true', help='Use fp16 precision. Default: fp32 (max precision).') #Stores False default
+    parser.add_argument('--fps', type=float, default=None, help='FPS of the output video')
+
+    args = parser.parse_args()
+
+    args.input = args.input.rstrip('/').rstrip('\\')
+
+    logger.info(f"Processing video file :  {args.input}")
+    frames_np, num_frames, total_time, video_rate = read_binary(args.input)
+    up_frames_np = inference_realesrgan(args, frames_np[:20])
+
+    print(up_frames_np.shape)
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    axs[0].imshow(frames_np[0])
+    axs[0].set_title('Thermal Image')
+    axs[0].axis('off')
+
+    axs[1].imshow(up_frames_np[0])
+    axs[1].set_title('Thermal Image x2')
+    axs[1].axis('off')
+
+    plt.show()
+
+if __name__ == '__main__':
+    main()

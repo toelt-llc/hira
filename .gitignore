@@ -1,9 +1,11 @@
 data/*
 **/*DS_Store
 
-code/**/__pycache__
+*/**/__pycache__
 code/*/*
 code/inference_*
 !code/realesrgan
+!code/smartcam/*
+!code/inference_binary.py
 
 models/
