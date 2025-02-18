@@ -1,0 +1,7 @@
+numpy
+pyzmq
+PySide6
+pyqtgraph
+pims
+av
+opencv-python-headless
