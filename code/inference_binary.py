@@ -19,11 +19,13 @@ def read_binary(input_path):
     """
     decoder = smartcamDecoder.SmartCamDecoder()
     num_frames, total_time, video_rate = decoder.on_file(input_path)
+    # input for demo
+    num_frames = 2000
 
     decoder.read_frame(0)
     vImg, vt, tImg, tt = decoder.get_images()
     height, width = tImg.shape
-    logger.info(f'Input resolution: {height}x{width}, fps: {video_rate}, frames: {num_frames}, length: {total_time}s')
+    logger.info(f'Input resolution: {height}x{width}, fps: {int(video_rate)}, frames: {num_frames}, length: {int(total_time)}s')
 
     frames_np = np.empty((num_frames, height, width), dtype=np.uint8)  # Preallocate
     for i in tqdm(range(num_frames), unit='frame'):
@@ -82,6 +84,7 @@ def inference_realesrgan(args, frame_array):#, video_save_path):
 
     height, width = frame_array.shape if len(frame_array.shape) == 2 else frame_array[0].shape
 
+    logger.info(f'Upscaling to resolution: {height*args.outscale}x{width*args.outscale}, computing {frame_array.shape[0]} frames.')
     pbar = tqdm(total=frame_array.shape[0], unit='frame', desc='inference')
     i = 0
     up_frames_np = np.empty((frame_array.shape[0], height*args.outscale, width*args.outscale), dtype=np.uint16) # Pre-allocate
@@ -115,9 +118,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', type=str, default='inputs', help='Input video, image or folder')
     parser.add_argument( '-n', '--model_name', type=str, default='realesr-general-x4v3',
-        help=('Model names: realesr-general-x4v3 (default)| realesr-animevideov3 '))
+        help=('Model names: realesr-general-x4v3 (default)| finetuned-realesr'))
     parser.add_argument('-o', '--output', type=str, default='results', help='Output folder')
-    parser.add_argument('-dn', '--denoise_strength', type=float, default=0.5,
+    parser.add_argument('-dn', '--denoise_strength', type=float, default=0,
         help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
               'Only used for the realesr-general-x4v3 model'))
     parser.add_argument('-s', '--outscale', type=float, default=2, help='The final upsampling scale of the image. Default 2')
@@ -127,6 +130,7 @@ def main():
     args = parser.parse_args()
 
     args.input = args.input.rstrip('/').rstrip('\\')
+    print(args.input)
     if args.debug:
         print("start")
         frames_np, num_frames, total_time, video_rate = read_binary(args.input)
@@ -139,16 +143,27 @@ def main():
         up_frames_np = inference_realesrgan(args, frames_np)
         create_video_gif(up_frames_np[:1000], 'high') # save only the first 1000 frames
 
+        # Read lep 3 for comp
+        lep3 = args.input.replace("lep2", "lep3")
+        logger.info(f"Reading video file :  {lep3}")
+        frames_np_lep3, num_frames, total_time, video_rate = read_binary(lep3)
+        create_video_gif(frames_np_lep3[:1000], 'lep3')
+
         print(up_frames_np.shape)
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-        axs[0].imshow(frames_np[0])
-        axs[0].set_title('Thermal Image')
+        fig, axs = plt.subplots(1, 3, figsize=(17, 6))
+        axs[0].imshow(frames_np[0], cmap='gray')
+        axs[0].set_title('Thermal Image Lep2')
         axs[0].axis('off')
 
-        axs[1].imshow(up_frames_np[0])
-        axs[1].set_title('Thermal Image x2')
+        axs[1].imshow(up_frames_np[0], cmap='gray')
+        axs[1].set_title('Thermal Image Lep2 x2')
         axs[1].axis('off')
 
+        axs[2].imshow(up_frames_np[0], cmap='gray')
+        axs[2].set_title('Thermal Image Lep3 ')
+        axs[2].axis('off')
+
+        plt.savefig(f"first_frame_{args.input[21:-4]}.png")
         plt.show()
 
 if __name__ == '__main__':
