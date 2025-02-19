@@ -6,6 +6,9 @@ import numpy as np
 
 from basicsr.utils.download_util import load_file_from_url
 from loguru import logger
+from matplotlib import cm
+from pims import Frame
+from PIL import Image
 from realesrgan import RealESRGANer
 from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 from smartcam import smartcamDecoder
@@ -22,16 +25,22 @@ def read_binary(input_path):
     height, width = tImg.shape
     logger.info(f'Input resolution: {height}x{width}, fps: {video_rate}, frames: {num_frames}, length: {total_time}s')
 
-    frames_np = np.empty((num_frames, height, width), dtype=np.uint16)  # Preallocate
+    frames_np = np.empty((num_frames, height, width), dtype=np.uint8)  # Preallocate
     for i in tqdm(range(num_frames), unit='frame'):
         # convert
         decoder.read_frame(i)
         vImg, vt, tImg, tt = decoder.get_images()
-        frame_np = np.array(tImg, dtype=np.float32)
-        frame_array_scaled_256 = ((tImg - frame_np.max()) / (frame_np.max() - frame_np.min()) * 255).astype(np.uint8)
-        frames_np[i] = frame_array_scaled_256  # Assign 
+        frame_np = np.array(tImg)
+        frame_array_scaled_255 = ((frame_np - frame_np.min()) / (frame_np.max() - frame_np.min()) * 255)
+        frames_np[i] = frame_array_scaled_255  # Assign 
 
     return frames_np, num_frames, total_time, video_rate
+
+def create_video_gif(input_frames, output_name, fps=100):
+    """ Create a gif from a list of frames (expects NumPy).
+    """
+    imgs = [Image.fromarray(cm.viridis(frame, bytes=True)) for frame in input_frames]
+    imgs[0].save(f"{output_name}.gif", save_all=True, append_images=imgs[1:], duration=1/fps, loop=0)
 
 def inference_realesrgan(args, frame_array):#, video_save_path):
     # ---------------------- determine models according to model names ---------------------- #
@@ -114,26 +123,33 @@ def main():
     parser.add_argument('-s', '--outscale', type=float, default=2, help='The final upsampling scale of the image. Default 2')
     parser.add_argument('--fp16', action='store_true', help='Use fp16 precision. Default: fp32 (max precision).') #Stores False default
     parser.add_argument('--fps', type=float, default=None, help='FPS of the output video')
-
+    parser.add_argument('--debug', action='store_true', help='For debugging')
     args = parser.parse_args()
 
     args.input = args.input.rstrip('/').rstrip('\\')
+    if args.debug:
+        print("start")
+        frames_np, num_frames, total_time, video_rate = read_binary(args.input)
+        create_video_gif(frames_np[:1000], 'test') # save only the first 1000 frames
+        print("end")
+    else:
+        logger.info(f"Processing video file :  {args.input}")
+        frames_np, num_frames, total_time, video_rate = read_binary(args.input)
+        create_video_gif(frames_np[:1000], 'low') # save only the first 1000 frames
+        up_frames_np = inference_realesrgan(args, frames_np)
+        create_video_gif(up_frames_np[:1000], 'high') # save only the first 1000 frames
 
-    logger.info(f"Processing video file :  {args.input}")
-    frames_np, num_frames, total_time, video_rate = read_binary(args.input)
-    up_frames_np = inference_realesrgan(args, frames_np[:20])
+        print(up_frames_np.shape)
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+        axs[0].imshow(frames_np[0])
+        axs[0].set_title('Thermal Image')
+        axs[0].axis('off')
 
-    print(up_frames_np.shape)
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    axs[0].imshow(frames_np[0])
-    axs[0].set_title('Thermal Image')
-    axs[0].axis('off')
+        axs[1].imshow(up_frames_np[0])
+        axs[1].set_title('Thermal Image x2')
+        axs[1].axis('off')
 
-    axs[1].imshow(up_frames_np[0])
-    axs[1].set_title('Thermal Image x2')
-    axs[1].axis('off')
-
-    plt.show()
+        plt.show()
 
 if __name__ == '__main__':
     main()
