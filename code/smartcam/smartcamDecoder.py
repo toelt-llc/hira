@@ -168,7 +168,7 @@ class SmartCamDecoder():
     ##########################################################################  READER part
 
 
-    def get_info(self, fid, par_frames=0, log=True):
+    def get_info(self, fid, par_frames=0, log=False):
         if fid is None:
             return 0, 0, 0
 

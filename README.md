@@ -51,21 +51,41 @@ This repository contains a script to perform video upscaling using existing and 
 
 By default, the command looks for files in the *code/inputs/* folder. Put your samples in this folder.
 The upscaled results outputs are in *code/results*. Default upscales x2.
-Supported formats are : .mp4/.flv/.mkv. Currently, videos are converted to mp4 at inference.
+Supported formats are : .mp4/.flv/.mkv. Currently, videos are converted to mp4 at inference.  
+**NOTE** Currently only the first 2000 frames of a video are considered for inference, for testing.  
 
 Command options:
 
+Given a REC folder with .zsc and corresponding videos files, the inference_binary script can be run using : 
+
+basic usage
+```sh
+python3 inference_binary.py -i path/to/input/videoLep3.zsc 
+```
+
+denoise option (undesired smoothing effect)
+```sh
+python3 inference_binary.py -i path/to/input/videoLep3.zsc -dn 1
+```
+
+increased upsacle option (as tests)
+```sh
+python3 inference_binary.py -i path/to/input/videoLep3.zsc -s 4
+```
+
+
+### General video upsacle usage
 ```sh
 cd code
 python3 inference.py -h
 ```
 
-To run the inference script on a single video file:
+Inference script on a single video file:
 
 ```sh
 python3 inference.py -i path/to/input/video.mp4 -o path/to/output/directory
 ```
-### Folder Input
+#### Folder Input
 
 To process all videos in a directory:
 
@@ -74,7 +94,7 @@ python3 inference.py -i path/to/input/directory -o path/to/output/directory
 ```
 
 **Upcoming features** :  
-- [ ] inference handles both images and videos
+- [x] inference handles both images and videos
 - [ ] reference pipeline of the model fine-tugning training
 <!-- refer to the [notebook](./notebook.ipynb) -->
 - [ ] long video split : if a video > 2 minutes, the script will automatically split it into parts of 2 minutes each, the model will upscale and save them individually.

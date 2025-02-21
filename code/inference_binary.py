@@ -1,13 +1,14 @@
 import os
 import argparse
 
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 
 from basicsr.utils.download_util import load_file_from_url
 from loguru import logger
 from matplotlib import cm
-from pims import Frame
+# from pims import Frame
 from PIL import Image
 from realesrgan import RealESRGANer
 from realesrgan.archs.srvgg_arch import SRVGGNetCompact
@@ -41,6 +42,8 @@ def read_binary(input_path):
 def create_video_gif(input_frames, output_name, fps=100):
     """ Create a gif from a list of frames (expects NumPy).
     """
+    logger.info(f'Saving gif: {output_name}.gif')
+    # pbar = tqdm(total=len(input_frames), unit='frame', desc='saving')
     imgs = [Image.fromarray(cm.viridis(frame, bytes=True)) for frame in input_frames]
     imgs[0].save(f"{output_name}.gif", save_all=True, append_images=imgs[1:], duration=1/fps, loop=0)
 
@@ -84,6 +87,7 @@ def inference_realesrgan(args, frame_array):#, video_save_path):
 
     height, width = frame_array.shape if len(frame_array.shape) == 2 else frame_array[0].shape
 
+    args.outscale = int(args.outscale)
     logger.info(f'Upscaling to resolution: {height*args.outscale}x{width*args.outscale}, computing {frame_array.shape[0]} frames.')
     pbar = tqdm(total=frame_array.shape[0], unit='frame', desc='inference')
     i = 0
@@ -94,16 +98,10 @@ def inference_realesrgan(args, frame_array):#, video_save_path):
             break
 
         try:
-            # numpy rescale
-            # frame_np = np.array(frame, dtype=np.float32)
-            # frame_scaled_256 = ((frame - frame_np.max()) / (frame_np.max() - frame_np.min()) * 255).astype(np.uint8)
-            # print(frame_scaled_256.shape)
             output, _ = upsampler.enhance(frame, outscale=args.outscale)
-            # return output
         except RuntimeError as error:
             logger.error('Error', error)
         else:
-            # writer.write_frame(output)
             up_frames_np[i] = output
 
         i += 1
@@ -119,7 +117,7 @@ def main():
     parser.add_argument('-i', '--input', type=str, default='inputs', help='Input video, image or folder')
     parser.add_argument( '-n', '--model_name', type=str, default='realesr-general-x4v3',
         help=('Model names: realesr-general-x4v3 (default)| finetuned-realesr'))
-    parser.add_argument('-o', '--output', type=str, default='results', help='Output folder')
+    # parser.add_argument('-o', '--output', type=str, default='results', help='Output folder')
     parser.add_argument('-dn', '--denoise_strength', type=float, default=0,
         help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
               'Only used for the realesr-general-x4v3 model'))
@@ -130,38 +128,39 @@ def main():
     args = parser.parse_args()
 
     args.input = args.input.rstrip('/').rstrip('\\')
-    print(args.input)
     if args.debug:
-        print("start")
+        print("start debug")
         frames_np, num_frames, total_time, video_rate = read_binary(args.input)
         create_video_gif(frames_np[:1000], 'test') # save only the first 1000 frames
-        print("end")
+        print("end debug")
+
     else:
         logger.info(f"Processing video file :  {args.input}")
         frames_np, num_frames, total_time, video_rate = read_binary(args.input)
-        create_video_gif(frames_np[:1000], 'low') # save only the first 1000 frames
+        create_video_gif(frames_np, f'IN_{args.input[21:-4]}') # save only the first 1000 frames
         up_frames_np = inference_realesrgan(args, frames_np)
-        create_video_gif(up_frames_np[:1000], 'high') # save only the first 1000 frames
+        create_video_gif(up_frames_np, f'OUT_{args.input[21:-4]}') # save only the first 1000 frames
 
         # Read lep 3 for comp
-        lep3 = args.input.replace("lep2", "lep3")
-        logger.info(f"Reading video file :  {lep3}")
-        frames_np_lep3, num_frames, total_time, video_rate = read_binary(lep3)
-        create_video_gif(frames_np_lep3[:1000], 'lep3')
+        # lep3 = args.input.replace("lep2", "lep3")
+        # logger.info(f"Reading video file :  {lep3}")
+        # frames_np_lep3, num_frames, total_time, video_rate = read_binary(lep3)
+        # create_video_gif(frames_np_lep3[:1000], 'lep3')
+        # print(up_frames_np.shape)
 
-        print(up_frames_np.shape)
-        fig, axs = plt.subplots(1, 3, figsize=(17, 6))
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+        plt.title("First Frame Comparison")
         axs[0].imshow(frames_np[0], cmap='gray')
-        axs[0].set_title('Thermal Image Lep2')
+        axs[0].set_title('Thermal Image Input')
         axs[0].axis('off')
 
         axs[1].imshow(up_frames_np[0], cmap='gray')
-        axs[1].set_title('Thermal Image Lep2 x2')
+        axs[1].set_title('Thermal Image x2')
         axs[1].axis('off')
 
-        axs[2].imshow(up_frames_np[0], cmap='gray')
-        axs[2].set_title('Thermal Image Lep3 ')
-        axs[2].axis('off')
+        # axs[2].imshow(up_frames_np[0], cmap='gray')
+        # axs[2].set_title('Thermal Image Lep3 ')
+        # axs[2].axis('off')
 
         plt.savefig(f"first_frame_{args.input[21:-4]}.png")
         plt.show()
