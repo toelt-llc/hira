@@ -4,6 +4,12 @@
 
 This repository contains a script to perform video upscaling using existing and custom models. The script supports .mp4/.flv/.mkv video formats. 
 
+## Inference performances report
+On the **120x160 -> 240x320** upscaling : 
+- GPU (NVIDIA A6000, 48GB) : ~120frames/s
+- CPU (Mac/Windows 16GB Ram) : ~4frames/s
+- TPU (Jetson Xavier/ORIN) : To be determined
+
 ## Table of Contents
 
 - [Installation](#installation)
