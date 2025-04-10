@@ -22,8 +22,8 @@ On the **120x160 -> 240x320** upscaling :
 
 **Prerequisites**
 
-- Python 3.11
-- Conda (for environment management)
+- Python 3.8.10
+- (Conda for environment management)
 
 ### Steps
 
@@ -37,7 +37,7 @@ On the **120x160 -> 240x320** upscaling :
 2. **Create a Conda environment:**
 
     ```sh
-    conda create -n hira python=3.11
+    conda create -n hira python=3.8.10
     conda activate hira
     ```
 
@@ -55,7 +55,7 @@ On the **120x160 -> 240x320** upscaling :
 
 ### Basic Usage
 
-By default, the command looks for files in the *code/inputs/* folder. Put your samples in this folder.
+By default, the command looks for video files in the *code/inputs/* folder. Put your samples in this folder.
 The upscaled results outputs are in *code/results*. Default upscales x2.
 Supported formats are : .mp4/.flv/.mkv. Currently, videos are converted to mp4 at inference.  
 **NOTE** Currently only the first 2000 frames of a video are considered for inference, for testing.  

@@ -7,5 +7,7 @@ code/inference_*
 !code/realesrgan
 !code/smartcam/*
 !code/inference_binary.py
+!code/inference_frame.py
+!code/inference_frame.*ipynb
 
 models/
