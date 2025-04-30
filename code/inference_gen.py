@@ -116,8 +116,11 @@ class ImageUpscaler:
 
     def upscale_single_frame(self, frame):
         try:
+            height, width = frame.shape
+            up_frames_np = np.empty((1, height*self.outscale, width*self.outscale), dtype=np.uint16)
             output, _ = self.sr_model.enhance(frame, outscale=self.outscale)
-            return output
+            up_frames_np[0] = output
+            return up_frames_np
         except RuntimeError as error:
             logger.error('Error during inference: {}'.format(error))
             return None
