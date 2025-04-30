@@ -1,25 +1,17 @@
-import numpy as np
-import struct
+# zmq_publisher_test.py
 import zmq
 import time
+import numpy as np
 
-# Setup ZeroMQ publisher
 context = zmq.Context()
-zpub = context.socket(zmq.PUB)
-zpub.bind("tcp://*:9999")
+publisher = context.socket(zmq.PUB)
+publisher.bind("tcp://*:5555")
 
-# Wait briefly to allow subscriber to connect
-time.sleep(1)
+time.sleep(1)  # Give subscriber time to connect
 
-while True:
-    # Generate a dummy grayscale image (e.g., 480x640)
-    height, width = 480, 640
-    img = np.random.randint(0, 65535, size=(height, width), dtype=np.uint16)
-
-    # Pack header with image shape
-    header = struct.pack("HH", height, width)
-
-    # Send multipart message
-    zpub.send_multipart([header, img.tobytes()])
-
-    time.sleep(0.1)  # ~10 FPS
+H, W = 480, 640
+for i in range(10):
+    frame = np.random.randint(0, 256, (H, W), dtype=np.uint8)
+    publisher.send(frame.tobytes())
+    print("Published frame")
+    time.sleep(0.05)
