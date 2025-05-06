@@ -14,7 +14,7 @@ pims
 pyqtgraph
 PySide6
 pyzmq
-torch==1.13
-torchvision==0.14
+torch==1.13.1
+# torchvision==0.14
 tqdm
 zmq

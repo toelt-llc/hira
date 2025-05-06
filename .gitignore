@@ -1,13 +1,26 @@
 data/*
 **/*DS_Store
 
-*/**/__pycache__
-code/*/*
-code/inference_*
-!code/realesrgan
-!code/smartcam/*
-!code/inference_binary.py
-!code/inference_frame.py
-!code/inference_frame.*ipynb
+**/*/weights
+**/__pycache__/
+**/.eggs/
+code/gfpgan/
+code/inputs/
+code/sample/
+code/outputs/
+code/results/
+code/smartcam2/
+code/*/realesrgan
+vdeos
+
+# code/*/*
+# code/inference_*
+# !code/realesrgan
+# !code/smartcam/*
+# !code/smartcamZMQ/*
+# !code/inference_binary.py
+# !code/inference_frame.py
+# !code/inference_gen.py
+# !code/inference_frame.*ipynb
 
 models/

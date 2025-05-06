@@ -15,8 +15,8 @@ import logging
 
 from smartcamDecoder import SmartCamDecoder
 from smartcamImager import SmartCamImagingWidget
-from inference_gen import ImageUpscaler  # Import your upscaler model
-from inference_frame import inference_realesrgan_frame  # Import the inference function
+from inference_gen import ImageUpscaler # Inference class for upscaling
+from inference_frame import inference_realesrgan_frame  # for tests
 
 import pyqtgraph as pg
 pg.setConfigOptions(imageAxisOrder="row-major")

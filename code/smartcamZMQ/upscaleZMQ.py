@@ -15,10 +15,10 @@ import logging
 
 from smartcamDecoder import SmartCamDecoder
 from smartcamImager import SmartCamImagingWidget
-from inference_gen import ImageUpscaler  # Import your upscaler model
-from inference_frame import inference_realesrgan_frame  # Import the inference function
-
+from inference_gen import ImageUpscaler # Inference class for upscaling
+from inference_frame import inference_realesrgan_frame  # for tests
 import pyqtgraph as pg
+
 pg.setConfigOptions(imageAxisOrder="row-major")
 pg.setConfigOptions(antialias=True)
 
@@ -26,6 +26,39 @@ DEFAULT_PATH = os.path.join("..", "recs")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
+
+class ZMQReceiver(QtCore.QThread):
+    frame_received = QtCore.Signal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.running = True
+        self.context = zmq.Context()
+        self.subscriber = self.context.socket(zmq.SUB)
+        self.subscriber.connect("tcp://localhost:9999")
+        self.subscriber.setsockopt_string(zmq.SUBSCRIBE, '')
+
+    def run(self):
+        while self.running:
+            try:
+                # First receive frame dimensions
+                hw_bytes = self.subscriber.recv(flags=zmq.NOBLOCK)
+                frame_bytes = self.subscriber.recv(flags=zmq.NOBLOCK)
+                h, w = struct.unpack("HH", hw_bytes)
+
+                 # Convert to numpy array, 16 bit
+                frame = np.frombuffer(frame_bytes, dtype=np.uint8).reshape((h, w))
+                self.frame_received.emit(frame)
+
+            except zmq.Again:
+                time.sleep(0.001)
+            except Exception as e:
+                logging.error(f"ZMQ error: {e}")
+                time.sleep(0.1)
+
+    def stop(self):
+        self.running = False
+        self.wait()
 
 class UpscalerThread(QtCore.QThread):
     """Thread for handling image upscaling without blocking the UI"""
@@ -36,12 +69,16 @@ class UpscalerThread(QtCore.QThread):
         super().__init__(parent)
         self.queue_in = queue.Queue(maxsize=10)
         self.running = True
+        self.zmq_receiver = ZMQReceiver()
         try:
             self.status_update.emit("Initializing upscaler model...")
-            self.upscaler = ImageUpscaler(device='cuda:1') # or None if no GPU
+            self.upscaler = ImageUpscaler(device='cuda:1')
             logging.info("Upscaler initialized")
             self.status_update.emit("Upscaler ready")
             self.model_loaded = True
+            # Connect ZMQ receiver to queue
+            self.zmq_receiver.frame_received.connect(self.process_image)
+            self.zmq_receiver.start()
         except Exception as e:
             self.status_update.emit(f"Error initializing upscaler: {e}")
             logging.error(f"Error initializing upscaler: {e}")
@@ -78,21 +115,19 @@ class UpscalerThread(QtCore.QThread):
 
     def stop(self):
         self.running = False
+        self.zmq_receiver.stop()
         self.wait()
 
+    # Modified process_image to handle direct ZMQ frames
     def process_image(self, img):
+        """Now receives pre-processed frames from ZMQ"""
         if not self.queue_in.full() and img is not None:
-            # Preprocess the thermal image similar to read_binary function
-            # Normalize and scale to 0-255 range
             try:
-                frame_np = np.array(img)
-                if frame_np.max() > frame_np.min():  # Avoid division by zero
-                    frame_array_scaled_255 = ((frame_np - frame_np.min()) / (frame_np.max() - frame_np.min()) * 255).astype(np.uint8)
-                    self.queue_in.put(frame_array_scaled_255)
-                else:
-                    logging.warning("Skipping frame with no contrast (min == max)")
+                # Directly put the received frame into queue
+                # Remove scaling/normalization since we assume sender does this
+                self.queue_in.put(img.astype(np.uint8))
             except Exception as e:
-                logging.error(f"Error preprocessing thermal image: {e}")
+                logging.error(f"Error queueing frame: {e}")
 
 
 class ThermalImageWidget(QtWidgets.QGroupBox):
@@ -141,7 +176,7 @@ class ThermalImageWidget(QtWidgets.QGroupBox):
         # Add FPS counter
         self.fpsLabel = QtWidgets.QLabel("FPS: 0.0")
         layout.addWidget(self.fpsLabel)
-        
+
     def change_colormap(self, index):
         """Change the colormap based on combo box selection"""
         colormap_dict = {
@@ -161,7 +196,7 @@ class ThermalImageWidget(QtWidgets.QGroupBox):
     def show_upscaled(self, upscaled_image):
         """Display the upscaled thermal image"""
         self.upscaled = upscaled_image
-        
+
         # Update FPS counter
         self.fps_counter += 1
         if self.fps_counter % 10 == 0:
@@ -169,7 +204,7 @@ class ThermalImageWidget(QtWidgets.QGroupBox):
             self.fps = 10 / (now - self.last_time)
             self.last_time = now
             self.fpsLabel.setText(f"FPS: {self.fps:.2f}")
-        
+
         # Display the upscaled image with a thermal colormap
         if self.upscaled is not None:
             # Apply colormap if the image is grayscale
@@ -182,7 +217,7 @@ class ThermalImageWidget(QtWidgets.QGroupBox):
             else:
                 # If already has channels, just display it
                 self.imageView.setImage(self.upscaled, autoLevels=True)
-                
+
             self.infoLabel.setText(f"Upscaler: Active - Size: {self.upscaled.shape}")
 
 
@@ -204,7 +239,7 @@ class SmartCamPlayingWidget(QtWidgets.QWidget):
         self.decoder = None
         self.zctx = zmq.Context()
         self.zpub = self.zctx.socket(zmq.PUB)
-        self.zpub.bind("tcp://0.0.0.0:9999")
+        self.zpub.bind("tcp://0.0.0.0:5556")
         self.frame_size = 0
         self.frame_index = 0
         self.num_frames = 0
@@ -537,12 +572,12 @@ class SmartCamPlayer(QtWidgets.QMainWindow):
         self.playingWidget = SmartCamPlayingWidget(True, "Command Panel", self)
         self.imagingWidget = SmartCamImagingWidget("Frame Panel", self)
         self.thermalWidget = ThermalImageWidget("Upscaled Thermal", self)
-        
+
         # Initialize upscaler thread
         self.upscalerThread = UpscalerThread(self)
         self.upscalerThread.status_update.connect(self.update_upscaler_status)
         self.upscalerThread.start()
-        
+
         self.setup_gui()
 
         # Connect signals
@@ -553,11 +588,11 @@ class SmartCamPlayer(QtWidgets.QMainWindow):
         self.playingWidget.newThermalImage.connect(self.process_thermal)
         self.upscalerThread.upscaled_image.connect(self.thermalWidget.show_upscaled)
         self.imagingWidget.slider.setVisible(True)
-        
+
         # Open file if provided as argument
         if len(argv) > 1:
             self.playingWidget.do_open(argv[1])
-            
+
     def update_upscaler_status(self, status):
         """Update upscaler status display"""
         self.thermalWidget.infoLabel.setText(f"Upscaler: {status}")
@@ -569,17 +604,17 @@ class SmartCamPlayer(QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.mainLayout = QtWidgets.QGridLayout()
         self.centralWidget.setLayout(self.mainLayout)
-        
+
         # Add widgets to layout
         self.mainLayout.addWidget(self.playingWidget, 0, 0)  # Command panel
         self.mainLayout.addWidget(self.imagingWidget, 0, 1)  # Original frames
         self.mainLayout.addWidget(self.thermalWidget, 0, 2)  # Upscaled thermal
-        
+
         # Set column stretch factors
         self.mainLayout.setColumnStretch(0, 0)  # Command panel doesn't stretch
         self.mainLayout.setColumnStretch(1, 1)  # Original frames stretch
         self.mainLayout.setColumnStretch(2, 1)  # Upscaled thermal stretches
-        
+
         # Set reasonable minimum size
         self.setMinimumSize(1600, 600)
 
