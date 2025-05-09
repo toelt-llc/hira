@@ -30,3 +30,11 @@ python 4_reader_bin.py
 ```
 
 ## Queue integration 
+To implement the queue system a secondary queue thread is created.  
+_QueueWorker_ : A new Class is introduced to handle ZMQ receiving in a separate thread.
+The QueueWorker Class is instantiated and started so the ZMQUpscaler's run can function normally.
+
+**Queue functions** :   
+_self.queue_in.put(frame)_: puts the received frame into the queue.  
+_self.queue_in.get(timeout=0.1)_: is used when the main thread retrieves frames from the queue. The timeout prevents the get() call from blocking indefinitely if the queue is empty. Some tests to be done on the timeout option.  
+_self.queue_in.task_done()_: acknowledges to queue that processing of a given frame is finished.  
