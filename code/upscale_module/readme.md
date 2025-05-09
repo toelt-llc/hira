@@ -2,6 +2,20 @@
 
 This folder contains the script used to read, upscale and publish frames to a ZMQ subscriber. 
 
+### Environment
+
+1. **Create a Conda environment:**
+    ```sh
+    conda create -n hira python=3.8.10
+    conda activate hira
+    ```
+
+2. **Install dependencies:**
+From the current directory
+    ```sh
+    pip install -r ../../requirements.txt
+    ```
+
 ## Scripts
 
  - [1.upscaler_zmq](./1_upscaler_zmq.py) : Launches the listening to a subscriber. The model is initialized and ready for frame inference. After upscaling the model outputs and save frames and publishes to an other ZMQ adress (10000).  
@@ -30,6 +44,7 @@ python 4_reader_bin.py
 ```
 
 ## Queue integration 
+**CURRENTLY STILL TESTING**
 To implement the queue system a secondary queue thread is created.  
 _QueueWorker_ : A new Class is introduced to handle ZMQ receiving in a separate thread.
 The QueueWorker Class is instantiated and started so the ZMQUpscaler's run can function normally.

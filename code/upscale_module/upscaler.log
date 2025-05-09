@@ -1,0 +1,57 @@
+[2025-05-09 10:15:28,874] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:15:28,875] Initializing upscaler model...
+[2025-05-09 10:15:30,771] Error initializing upscaler: Torch not compiled with CUDA enabled
+[2025-05-09 10:15:30,772] Starting upscaler
+[2025-05-09 10:16:39,030] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:16:39,030] Initializing upscaler model...
+[2025-05-09 10:16:39,062] Error initializing upscaler: Torch not compiled with CUDA enabled
+[2025-05-09 10:16:39,063] Starting upscaler
+[2025-05-09 10:16:43,943] Shutting down.
+[2025-05-09 10:16:43,944] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:43,944] Total frames processed: 0
+[2025-05-09 10:16:44,045] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,150] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,252] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,356] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,460] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,561] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,665] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,766] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,871] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:44,976] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,077] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,179] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,282] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,386] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,488] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,593] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,695] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,800] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:45,904] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:46,009] Error in queue worker: Socket operation on non-socket
+[2025-05-09 10:16:55,126] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:16:55,126] Initializing upscaler model...
+[2025-05-09 10:16:55,160] Upscaler ready
+[2025-05-09 10:16:55,160] Starting upscaler
+[2025-05-09 10:18:37,541] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:18:37,541] Initializing upscaler model...
+[2025-05-09 10:18:37,628] Upscaler ready
+[2025-05-09 10:18:37,628] Starting upscaler
+[2025-05-09 10:20:12,577] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:20:12,577] Initializing upscaler model...
+[2025-05-09 10:20:12,616] Error initializing upscaler: Torch not compiled with CUDA enabled
+[2025-05-09 10:20:12,617] Starting upscaler
+[2025-05-09 10:20:19,245] Shutting down.
+[2025-05-09 10:20:19,246] Total frames processed: 0
+[2025-05-09 10:20:26,601] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:20:26,602] Initializing upscaler model...
+[2025-05-09 10:20:26,641] Upscaler ready
+[2025-05-09 10:20:26,641] Starting upscaler
+[2025-05-09 10:23:36,682] Shutting down.
+[2025-05-09 10:23:36,683] Total frames processed: 1009
+[2025-05-09 10:26:47,921] Listening for frames on tcp://localhost:9999 and sending to tcp://*:10000
+[2025-05-09 10:26:47,921] Initializing upscaler model...
+[2025-05-09 10:26:47,958] Upscaler ready
+[2025-05-09 10:26:47,958] Starting upscaler
+[2025-05-09 10:27:17,345] Shutting down.
+[2025-05-09 10:27:17,347] Total frames processed: 28

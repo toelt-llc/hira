@@ -1,6 +1,7 @@
 import zmq
 import sys
 import time
+import torch
 import queue
 import struct
 import logging
@@ -15,7 +16,8 @@ from inference_gen import ImageUpscaler
 ADDRESS_IN = 9999
 ADDRESS_OUT = 10000
 # change to 'cpu' if not using GPU
-DEVICE = 'cuda:0' # or 'cuda' 
+# DEVICE = 'cuda:0' # or 'cuda' 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # logging
 logging.basicConfig(
@@ -31,7 +33,7 @@ class ZMQUpscaler:
     def __init__(self):
         self.running = True
         self.model_loaded = False
-        self.queue_in = queue.Queue()
+        # self.queue_in = queue.Queue()
 
         # input ZMQ (receiving frames from ADDRESS_IN)
         self.input_ctx = zmq.Context()
@@ -56,7 +58,7 @@ class ZMQUpscaler:
             logging.info("Initializing upscaler model...")
             self.upscaler = ImageUpscaler(device=f'{DEVICE}')
             self.model_loaded = True
-            logging.info("Upscaler ready")
+            logging.info(f"Upscaler ready on {DEVICE}")
         except Exception as e:
             logging.error(f"Error initializing upscaler: {e}")
             self.model_loaded = False
@@ -129,8 +131,8 @@ class ZMQUpscaler:
         logging.info("Starting upscaler")
 
         # Start the queue worker thread
-        self.queue_worker = QueueWorker(self)
-        self.queue_worker.start()
+        # self.queue_worker = QueueWorker(self)
+        # self.queue_worker.start()
 
         try:
             while self.running:

@@ -3,7 +3,7 @@ import time
 import struct
 import matplotlib.pyplot as plt
 
-from inference_binary import read_binary
+from inference_gen import read_binary
 
 # ZMQ publisher - to be run before the upscaler or while it is running
 # This script reads a binary video file and sends the frames over ZMQ publisher at selected adress.
@@ -11,7 +11,7 @@ from inference_binary import read_binary
 
 adress_in = 9999
 
-video = './inputs/S002-20250109/Rec-20250109-131827_lep2.zsc'
+video = './inputs/sample/Rec-20250109-131827_lep2.zsc'
 frames_array, num_frames, total_time, video_rate = read_binary(video)
 # print(frames_array.shape)
 
