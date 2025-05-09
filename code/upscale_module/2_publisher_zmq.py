@@ -11,7 +11,9 @@ from inference_gen import read_binary
 
 adress_in = 9999
 
-video = './inputs/sample/Rec-20250109-131827_lep2.zsc'
+# replace with your video file path
+# the folder should contain all the files from a recording for the decoder to work
+video = './inputs/S002-20250109/Rec-20250109-131827_lep2.zsc'
 frames_array, num_frames, total_time, video_rate = read_binary(video)
 # print(frames_array.shape)
 
